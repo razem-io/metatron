@@ -9,10 +9,9 @@ pipeline:
     - sbt assembly
   docker_dev:
     image: plugins/docker
-    secrets: [ docker_username,docker_password]
+    secrets: [ docker_username, docker_password ]
     repo: razemio/metatron
     dockerfile: docker/Dockerfile
-    debug: true
     tags:
       - dev
   github_release:
@@ -26,7 +25,7 @@ pipeline:
       event: tag
   docker_release:
     image: plugins/docker
-    secrets: [ docker_username,docker_password]
+    secrets: [ docker_username, docker_password ]
     repo: razemio/metatron
     dockerfile: docker/Dockerfile
     auto_tag: true
