@@ -1,0 +1,18 @@
+workspace:
+  base: /metaron
+  path: src/github.com/razem-io/metatron
+
+pipeline:
+  build:
+    image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
+    commands:
+    - sbt dist
+  github_release:
+    image: plugins/github-release
+    secrets: [ github_release_api_key ]
+    files:
+    - metatron-${DRONE_TAG}.jar
+    checksum:
+    - sha512
+    when:
+      event: tag

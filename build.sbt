@@ -1,7 +1,7 @@
-name := "Metatron"
+name := "metatron"
 organization := "io.razem"
 
-version := "0.1"
+version := "0.0.1"
 
 scalaVersion := "2.12.8"
 
@@ -20,3 +20,12 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion)
+
+assemblyMergeStrategy in assembly := {
+  case "META-INF/io.netty.versions.properties" => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}
+
+assemblyJarName in assembly := s"metatron-${version.value}.jar"
