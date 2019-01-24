@@ -11,7 +11,7 @@ pipeline:
     image: plugins/github-release
     secrets: [ github_release_api_key ]
     files:
-    - metatron-${DRONE_TAG}.jar
+    - target/scala-2.12/metatron-${DRONE_TAG}.jar
     checksum:
     - sha512
     when:
