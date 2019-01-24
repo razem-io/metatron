@@ -6,7 +6,7 @@ pipeline:
   build:
     image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
     commands:
-    - sbt dist
+    - sbt assembly
   github_release:
     image: plugins/github-release
     secrets: [ github_release_api_key ]
