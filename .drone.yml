@@ -22,7 +22,7 @@ pipeline:
       username: [ docker_hub_user ]
       password: [ docker_hub_pass ]
       repo: razemio/metatron
-      dockerfile: docker/
+      dockerfile: docker/Dockerfile
       auto_tag: true
     when:
       event: tag
