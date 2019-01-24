@@ -16,3 +16,13 @@ pipeline:
     - sha512
     when:
       event: tag
+  docker:
+    image: plugins/docker
+    settings:
+      username: [ docker_hub_user ]
+      password: [ docker_hub_pass ]
+      repo: razemio/metatron
+      dockerfile: docker/
+      auto_tag: true
+    when:
+      event: tag
