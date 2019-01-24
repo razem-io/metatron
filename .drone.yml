@@ -9,8 +9,7 @@ pipeline:
     - sbt assembly
   docker_dev:
     image: plugins/docker
-    username: [ docker_hub_user ]
-    password: [ docker_hub_pass ]
+    secrets: [ docker_username,docker_password]
     repo: razemio/metatron
     dockerfile: docker/Dockerfile
     debug: true
@@ -27,8 +26,7 @@ pipeline:
       event: tag
   docker_release:
     image: plugins/docker
-    username: [ docker_hub_user ]
-    password: [ docker_hub_pass ]
+    secrets: [ docker_username,docker_password]
     repo: razemio/metatron
     dockerfile: docker/Dockerfile
     auto_tag: true
