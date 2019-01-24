@@ -7,6 +7,15 @@ pipeline:
     image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
     commands:
     - sbt assembly
+  docker_dev:
+    image: plugins/docker
+    username: [ docker_hub_user ]
+    password: [ docker_hub_pass ]
+    repo: razemio/metatron
+    dockerfile: docker/Dockerfile
+    debug: true
+    tags:
+      - dev
   github_release:
     image: plugins/github-release
     secrets: [ github_release_api_key ]
@@ -16,7 +25,7 @@ pipeline:
     - sha512
     when:
       event: tag
-  docker:
+  docker_release:
     image: plugins/docker
     username: [ docker_hub_user ]
     password: [ docker_hub_pass ]
