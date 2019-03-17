@@ -11,7 +11,7 @@ pipeline:
     image: plugins/docker
     secrets: [ docker_username, docker_password ]
     repo: razemio/metatron
-    dockerfile: docker/dev/Dockerfile
+    dockerfile: modules/fetchers/homematic/docker/dev/Dockerfile
     tags:
       - dev
   github_release:
@@ -27,7 +27,7 @@ pipeline:
     image: plugins/docker
     secrets: [ docker_username, docker_password ]
     repo: razemio/metatron
-    dockerfile: docker/prod/Dockerfile
+    dockerfile: modules/fetchers/homematic/docker/prod/Dockerfile
     auto_tag: true
     when:
       event: tag
