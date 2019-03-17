@@ -1,17 +1,15 @@
 package metatron.model.xml
 
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 import enumeratum._
-import fr.hmil.roshttp.HttpRequest
-
-import scala.xml.{Node, NodeSeq}
-import monix.execution.Scheduler.Implicits.global
+import okhttp3.{OkHttpClient, Request}
 import wvlet.log.LogSupport
 
-import scala.concurrent.Await
-import scala.util.{Failure, Success}
-import concurrent.duration._
+import scala.io.{Codec, Source}
+import scala.util.Try
+import scala.xml.{Node, NodeSeq}
 
 case class RpcStateList(devices: Seq[RpcDevice])
 
@@ -26,28 +24,14 @@ case class RpcDatapoint(name: String, datapointType: String, iseId: Int, value: 
 
 object HomematicXmlRpc extends LogSupport {
 
-  def pollStateList: RpcStateList = {
+  val client = new OkHttpClient()
+  val request: Request = new Request.Builder()
+    .url("http://10.10.59.8/addons/xmlapi/statelist.cgi")
+    .build()
 
-
-    val f = HttpRequest("http://10.10.59.8/addons/xmlapi/statelist.cgi").get()
-
-    val r = Await.result(f, 10.seconds)
-
-    RpcStateList.fromXml(scala.xml.XML.loadString(r.body))
-
-//    stateList.devices.filter(_.channels.exists(_.datapoints.exists(_.datapointType.contains("TEMPERATURE"))))
-//      .foreach(d => {
-//        val name = d.name
-//        info("Device: " + name)
-//        d.channels.flatMap(_.datapoints).foreach(info(_))
-//      })
-
-//    stateList.devices.filter(_.channels.exists(_.datapoints.exists(_.datapointType.contains("TEMPERATURE"))))
-//      .foreach(d => {
-//        val name = d.name
-//        info("Device: " + name)
-//        d.channels.flatMap(_.datapoints.filter(_.datapointType.contains("TEMPERATURE"))).foreach(info(_))
-//      })
+  def pollStateList: Try[RpcStateList] = Try {
+    val rawXml = new String(client.newCall(request).execute().body().bytes(), StandardCharsets.ISO_8859_1)
+    RpcStateList.fromXml(scala.xml.XML.loadString(rawXml))
   }
 }
 

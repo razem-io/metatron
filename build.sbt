@@ -7,7 +7,9 @@ scalaVersion := "2.12.8"
 
 resolvers += Resolver.bintrayRepo("hmil", "maven")
 
-libraryDependencies += "fr.hmil" %% "roshttp" % "2.2.3"
+libraryDependencies += "io.monix" %% "monix-execution" % "3.0.0-RC2"
+
+libraryDependencies += "com.squareup.okhttp3" % "okhttp" % "3.13.1"
 
 libraryDependencies += "com.paulgoldbaum" %% "scala-influxdb-client" % "0.6.1"
 
@@ -21,19 +23,11 @@ libraryDependencies += "com.lihaoyi" %% "pprint" % "0.5.3"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.1.1"
 
-val circeVersion = "0.10.0"
-
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
-).map(_ % circeVersion)
+).map(_ % "0.10.0")
 
-assemblyMergeStrategy in assembly := {
-  case "META-INF/io.netty.versions.properties" => MergeStrategy.discard
-  case x =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
-    oldStrategy(x)
-}
+enablePlugins(JavaAppPackaging, UniversalPlugin)
 
-assemblyJarName in assembly := s"metatron-${version.value}.jar"

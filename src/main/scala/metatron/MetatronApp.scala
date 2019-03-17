@@ -14,7 +14,9 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 object MetatronApp extends App with LogSupport {
+
   import MetatronConfig._
+
   val influxdb = InfluxDB.connect(influxDbConfig.host, influxDbConfig.port)
   val db = influxdb.selectDatabase(influxDbConfig.databaseName)
 
@@ -28,7 +30,7 @@ object MetatronApp extends App with LogSupport {
     db.exists().onComplete {
       case Success(x) if !x =>
         db.create()
-        db.createRetentionPolicy("two_years", "105w", 1, true)
+        db.createRetentionPolicy(name = "two_years", duration = "105w", replication = 1, default = true)
       case Failure(e) => println(e)
       case _ =>
     }
@@ -37,29 +39,31 @@ object MetatronApp extends App with LogSupport {
   scheduler.scheduleWithFixedDelay(10.seconds, 60.seconds) {
     info("Polling Data.... ")
 
-    val result = HomematicXmlRpc.pollStateList
+    val maybeStateList = HomematicXmlRpc.pollStateList
 
+    maybeStateList.foreach(result => {
+      val doubleResult: Seq[(xml.RpcDevice, Seq[(RpcDatapoint, Double)])] = result.devices.map(d => d -> d.channels.flatMap(_.datapoints.flatMap(p => Try(p.value.toDouble).toOption.map(p -> _))))
 
-    val doubleResult: Seq[(xml.RpcDevice, Seq[(RpcDatapoint, Double)])] = result.devices.map(d => d -> d.channels.flatMap(_.datapoints.flatMap(p => Try(p.value.toDouble).toOption.map(p -> _))))
+      val points = doubleResult.flatMap(t => {
+        val device = t._1
+        val points = t._2
 
-    val points = doubleResult.flatMap(t => {
-      val device = t._1
-      val points = t._2
+        points.map(p => {
+          val datapoint = p._1
+          val value = p._2
 
-      points.map(p => {
-        val datapoint = p._1
-        val value = p._2
+          val timestamp = datapoint.timestamp.toEpochMilli
+          val timestampCatched = if (timestamp == 0) Instant.now.toEpochMilli else timestamp
 
-        val timestamp = datapoint.timestamp.toEpochMilli
-        val timestampCatched = if (timestamp == 0) Instant.now.toEpochMilli else timestamp
-
-        Point(key = "hm", timestamp = timestampCatched)
-          .addTag("name", device.name)
-          .addTag("type", datapoint.datapointType)
-          .addField("value", value)
+          Point(key = "hm", timestamp = timestampCatched)
+            .addTag("name", device.name)
+            .addField(datapoint.datapointType, value)
+        })
       })
+
+      db.bulkWrite(points, retentionPolicy = "two_years", precision = Precision.MILLISECONDS)
     })
 
-    db.bulkWrite(points, retentionPolicy = "two_years", precision = Precision.MILLISECONDS)
+    maybeStateList.failed.foreach(error(_))
   }
 }
