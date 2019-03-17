@@ -19,6 +19,8 @@ libraryDependencies += "org.wvlet.airframe" %% "airframe-log" % "19.3.4"
 
 libraryDependencies += "com.lihaoyi" %% "pprint" % "0.5.3"
 
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.1.1"
+
 val circeVersion = "0.10.0"
 
 libraryDependencies ++= Seq(
