@@ -1,22 +1,30 @@
 package metatron
 
+import java.time.Instant
+
 import com.paulgoldbaum.influxdbclient.Parameter.Precision
 import com.paulgoldbaum.influxdbclient._
-import metatron.model.RpcDevice
-import metatron.model.request.RpcLoginRequest
+import metatron.model.xml
+import metatron.model.xml.{HomematicXmlRpc, RpcDatapoint}
 import monix.execution.Scheduler.{global => scheduler}
+import wvlet.log.LogSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-object MetatronApp extends App {
+object MetatronApp extends App with LogSupport {
   import MetatronConfig._
   val influxdb = InfluxDB.connect(influxDbConfig.host, influxDbConfig.port)
   val db = influxdb.selectDatabase(influxDbConfig.databaseName)
+
   init()
+
   def init(): Unit = {
+    import wvlet.airframe._
+
+    log.init
+
     db.exists().onComplete {
       case Success(x) if !x =>
         db.create()
@@ -26,65 +34,32 @@ object MetatronApp extends App {
     }
   }
 
-  var id = login()
-
-  def login(): String = {
-    val loginRequest = RpcLoginRequest(username = homematicConfig.username, homematicConfig.password)
-    Await.result(loginRequest.send(), 10.seconds).result
-  }
-
   scheduler.scheduleWithFixedDelay(10.seconds, 60.seconds) {
-    println("Polling Data.... ")
+    info("Polling Data.... ")
 
-    val result = pollData()
+    val result = HomematicXmlRpc.pollStateList
 
-    val points = result.map(e => {
-      val point = Point("hm")
-        .addTag("name", e._1.name)
-        .addTag("type", e._1.`type`)
 
-      e._2.foldLeft(point) { (p, m) => p.addField(m._1, m._2.toDouble) }
-    }).toSeq
+    val doubleResult: Seq[(xml.RpcDevice, Seq[(RpcDatapoint, Double)])] = result.devices.map(d => d -> d.channels.flatMap(_.datapoints.flatMap(p => Try(p.value.toDouble).toOption.map(p -> _))))
+
+    val points = doubleResult.flatMap(t => {
+      val device = t._1
+      val points = t._2
+
+      points.map(p => {
+        val datapoint = p._1
+        val value = p._2
+
+        val timestamp = datapoint.timestamp.toEpochMilli
+        val timestampCatched = if (timestamp == 0) Instant.now.toEpochMilli else timestamp
+
+        Point(key = "hm", timestamp = timestampCatched)
+          .addTag("name", device.name)
+          .addTag("type", datapoint.datapointType)
+          .addField("value", value)
+      })
+    })
 
     db.bulkWrite(points, retentionPolicy = "two_years", precision = Precision.MILLISECONDS)
-  }
-
-  def pollData(): Map[RpcDevice, List[(String, String)]] = {
-    val end = for {
-      devicesResponse <- model.request.RpcDeviceListAllDetailRequest(id).send()
-      result <- {
-        if(devicesResponse.error.exists(_.contains("access denied"))) id = login()
-
-        val futures: List[Future[(RpcDevice, Map[String, String])]] = devicesResponse
-          .result
-          .filter(device => Seq("HM-CC-RT-DN", "HM-TC-IT-WM-W-EU").contains(device.`type`))
-          .flatMap(device => {
-            device.channels.map(_.address).map(c => {
-              val f = model.request.RpcInterfaceGetParamsetRequest(id, device.interface, c, "VALUES").send()
-
-              f.onComplete {
-                case Success(x) => println(s"${device.name} - ${device.`type`} / $c -> $x")
-                case Failure(x) => println(s"${device.name} - ${device.`type`} / $c -> $x")
-              }
-
-              f.map(device -> _.result)
-            })
-          })
-
-        Future.sequence(futures.map(_.transform(Success(_))))
-      }
-    } yield result
-
-
-    val successes: Map[RpcDevice, List[(String, String)]] = Await.result(end, 40.seconds)
-      .filter(_.isSuccess)
-      .map(_.get)
-      .groupBy(_._1)
-      .mapValues(_.flatMap(_._2.toList))
-
-    println("HERE IT GOES!")
-    successes.filter(_._2.nonEmpty).foreach(e => println(e._1.name + ": " + e._2))
-
-    successes
   }
 }

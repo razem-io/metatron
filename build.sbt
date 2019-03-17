@@ -13,6 +13,12 @@ libraryDependencies += "com.paulgoldbaum" %% "scala-influxdb-client" % "0.6.1"
 
 libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 
+libraryDependencies += "com.beachape" %% "enumeratum" % "1.5.13"
+
+libraryDependencies += "org.wvlet.airframe" %% "airframe-log" % "19.3.4"
+
+libraryDependencies += "com.lihaoyi" %% "pprint" % "0.5.3"
+
 val circeVersion = "0.10.0"
 
 libraryDependencies ++= Seq(

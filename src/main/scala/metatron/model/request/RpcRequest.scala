@@ -21,6 +21,8 @@ trait RpcRequest[T] {
   val method: String
   val params: Map[String, String]
 
+
+  // TODO use implicit to extract logic
   def send()(implicit homematicConfig: HomematicConfig): Future[RpcResponse[T]] = {
     send(this.asJson, homematicConfig.url)
   }

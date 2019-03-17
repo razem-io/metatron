@@ -7,12 +7,11 @@ services:
     ports:
     - 127.0.0.1:8086:8086
   grafana:
-    image: grafana/grafana:4.6.3
+    image: grafana/grafana:5.4.3
     depends_on:
     - influxdb
     environment:
     - GF_SECURITY_ADMIN_PASSWORD=admin
-    - GF_INSTALL_PLUGINS=neocat-cal-heatmap-panel,vonage-status-panel,briangann-gauge-panel,jdbranham-diagram-panel
     - GF_SERVER_DOMAIN=localhost
     volumes:
     - ./data/grafana/data:/var/lib/grafana
